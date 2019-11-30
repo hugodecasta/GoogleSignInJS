@@ -32,8 +32,16 @@ class GoogleSignIn {
         })
     }
 
+    async disconnect() {
+        this.profile_data.profile.disconnect()
+        this.profile_data = null
+        var auth2 = gapi.auth2.getAuthInstance();
+        await auth2.disconnect()
+        await auth2.signOut()
+    }
+
     get_JQ_button() {
-        let btn = $('<div>').attr('id','g-signin2')
+        let btn = $('<div>').attr('id','g-signin2').addClass('g-signin2')
         let tthis = this
         btn.ready(function() {
             gapi.signin2.render('g-signin2', {
@@ -60,6 +68,8 @@ class GoogleSignIn {
             family_name:base_profile.getFamilyName(),
             given_name:base_profile.getGivenName(),
             image_url:base_profile.getImageUrl(),
+            base_profile:base_profile,
+            profile:profile
         }
     }
 
