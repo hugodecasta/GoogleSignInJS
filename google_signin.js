@@ -2,14 +2,16 @@
 
 class GoogleSignIn {
 
-    constructor() {
-        let tthis = this
+    constructor(CLIENT_ID=null) {
         this.profile_data = null
+        this.CLIENT_ID = CLIENT_ID
+        this.is_init = false
     }
 
-    async init_api(CLIENT_ID) {
-
-        this.is_init = false
+    async init_api(CLIENT_ID=null) {
+        if(this.is_init)
+            return
+        CLIENT_ID = CLIENT_ID==null?this.CLIENT_ID:CLIENT_ID
         let signin_meta = $('<meta>')
         .attr('name','google-signin-client_id')
         .attr('content',CLIENT_ID)
@@ -45,16 +47,27 @@ class GoogleSignIn {
         let tthis = this
         btn.ready(function() {
             gapi.signin2.render('g-signin2', {
-            'width': 240,
-            'height': 50,
-            'longtitle': false,
-            'onsuccess': function(profile) {
-                tthis.on_sign_in.call(tthis,profile)
-            },
-            'onfailure': function(fail) {
-                console.log(fail)
-            }
+                'width': 240,
+                'height': 50,
+                'longtitle': false,
+                'onsuccess': function(profile) {
+                    tthis.on_sign_in.call(tthis,profile)
+                },
+                'onfailure': function(fail) {
+                    console.log(fail)
+                }
             });
+        })
+        return btn
+    }
+
+    get_user_button(profile_data) {
+        let btn = $('<div>').addClass('user_btn')
+        btn.css('background-image','url("'+profile_data.image_url+'")')
+        let tthis = this
+        btn.click(async function(){
+            await tthis.disconnect()
+            location.reload()
         })
         return btn
     }
@@ -73,12 +86,24 @@ class GoogleSignIn {
         }
     }
 
-    async get_profile_data() {
+    async get_profile_data(draw_btn=true) {
+
+        await this.init_api()
+        let signin_btn = null
+        if(draw_btn && this.profile_data == null) {
+            signin_btn = this.get_JQ_button()
+            $('body').append(signin_btn)
+        }
+
         let tthis = this
         return new Promise((ok)=>{
             let int = setInterval(function() {
                 if(tthis.profile_data == null)
                     return
+                if(draw_btn && signin_btn != null) {
+                    signin_btn.remove()
+                    $('body').append(tthis.get_user_button(tthis.profile_data))
+                }
                 clearInterval(int)
                 ok(tthis.profile_data)
             })
