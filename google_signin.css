@@ -28,3 +28,19 @@
 }
 
 /* ------------------------------------------------- */
+
+.google_loading {
+    position: absolute;
+    width:50px;
+    height:50px;
+    top:calc(50% - 27px);
+    left:calc(50% - 27px);
+    border:4px solid #555;
+    border-radius: 1000px;
+    animation: google_loading_animation 2s infinite;
+}
+@keyframes google_loading_animation {
+    0%{border:4px solid #555;background:#fff;}
+    50%{border:4px solid #fff;background:#555;}
+    100%{border:4px solid #555;background:#fff;}
+}

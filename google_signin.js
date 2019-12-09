@@ -89,19 +89,33 @@ class GoogleSignIn {
     async get_profile_data(draw_btn=true) {
 
         await this.init_api()
-        let signin_btn = null
-        if(draw_btn && this.profile_data == null) {
-            signin_btn = this.get_JQ_button()
-            $('body').append(signin_btn)
-        }
 
         let tthis = this
+
+        let signin_btn = null
+        let load_icon = null
+        if(draw_btn && this.profile_data == null) {
+            load_icon = $('<div>').addClass('google_loading')
+            signin_btn = tthis.get_JQ_button().css('display','none')
+            $('body').append(signin_btn)
+            $('body').append(load_icon)
+            setTimeout(function(){
+                if(signin_btn != null) {
+                    load_icon.remove()
+                    signin_btn.css('display','block')
+                }
+            },2000)
+        }
+
         return new Promise((ok)=>{
             let int = setInterval(function() {
                 if(tthis.profile_data == null)
                     return
                 if(draw_btn && signin_btn != null) {
+                    load_icon.remove()
                     signin_btn.remove()
+                    load_icon = null
+                    signin_btn = null
                     $('body').append(tthis.get_user_button(tthis.profile_data))
                 }
                 clearInterval(int)
