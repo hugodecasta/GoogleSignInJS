@@ -12,6 +12,7 @@
     box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
     transition:all 0.2s;
     animation: user_btn_anim 0.3s forwards cubic-bezier(.18,1.32,.74,1.39);
+    z-index: 100;
 }
 
 .user_btn:hover {
