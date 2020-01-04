@@ -1,6 +1,6 @@
 'use strict'
 
-class GoogleSignIn {
+export default class GoogleSignIn {
 
     constructor(CLIENT_ID=null) {
         this.profile_data = null
