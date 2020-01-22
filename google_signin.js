@@ -2,11 +2,12 @@
 
 export default class GoogleSignIn {
 
-    constructor(CLIENT_ID=null, scope='') {
+    constructor(init_option) {
+
         this.profile_data = null
-        this.CLIENT_ID = CLIENT_ID
         this.is_init = false
-        this.scope = scope
+
+        this.init_option = init_option
     }
 
     is_connected() {
@@ -22,30 +23,25 @@ export default class GoogleSignIn {
         })
     }
 
-    async get_api(api, api_key, api_name) {
+    async get_api(api_name) {
         await this.get_profile_data()
-        gapi.client.setApiKey(api_key)
-        await gapi.client.load(api)
         return gapi.client[api_name]
     }
 
-    async init_api(CLIENT_ID=null) {
+    async init_api() {
         if(this.is_init)
             return
-        CLIENT_ID = CLIENT_ID==null?this.CLIENT_ID:CLIENT_ID
+
         await this.create_script('https://apis.google.com/js/platform.js')
         await this.create_script('https://apis.google.com/js/api.js')
-        let tthis = this
-        return new Promise(ok=>{
-            gapi.load("client:auth2", async function() {
-                await gapi.auth2.init({client_id: CLIENT_ID})
-                if(await gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                    tthis.on_sign_in(await gapi.auth2.getAuthInstance().currentUser.get())
-                }
-                tthis.is_init = true
-                ok()
-            });
-        })
+        await (new Promise(ok=>{gapi.load('client:auth2', ok)}))
+        await gapi.client.init(this.init_option)
+        let GoogleAuth = gapi.auth2.getAuthInstance();
+        if(await GoogleAuth.isSignedIn.get()) {
+            let user = GoogleAuth.currentUser.get();
+            this.on_sign_in(user)
+        }
+        this.is_init = true
     }
 
     async disconnect() {
@@ -56,13 +52,14 @@ export default class GoogleSignIn {
     get_JQ_button(callback) {
         let btn = $('<div>').attr('id','g-signin2').addClass('g-signin2')
         let tthis = this
+
         btn.ready(function() {
+
             gapi.signin2.render('g-signin2', {
-                'scope': this.scope,
                 'width': 240,
                 'height': 50,
                 'longtitle': false,
-                'onsuccess': function(profile) {
+                'onsuccess': async function(profile) {
                     tthis.on_sign_in.call(tthis,profile)
                     callback.call(tthis,tthis.profile_data)
                 },
@@ -101,61 +98,48 @@ export default class GoogleSignIn {
 
     async get_profile_data(draw_btn=true) {
 
-        let loader = $(this.get_spinner()).addClass('google_loading')
-        $('body').append(loader)
+        if($('.user_btn').length == 1) {
+            draw_btn = false
+        }
+
+
+        if(draw_btn) {
+            var loader = $(this.get_spinner()).addClass('google_loading')
+            $('body').append(loader)
+        }
         await this.init_api()
-        loader.remove()
+        if(draw_btn) {
+            loader.remove()
+        }
 
         if(this.is_connected()) {
-            let user_btn = this.get_user_button(this.profile_data)
-            $('body').append(user_btn)
+            if(draw_btn) {
+                let user_btn = this.get_user_button(this.profile_data)
+                $('body').append(user_btn)
+            }
             return this.profile_data
         }
 
-        let tthis = this
-        return new Promise(ok=>{
-            let signin_btn = this.get_JQ_button(async function() {
-                signin_btn.remove()
-                let profile_data = await tthis.get_profile_data(draw_btn)
-                ok(profile_data)
-            })
-            $('body').append(signin_btn)
-        })
-/*
-        let signin_btn = null
-        let load_icon = null
-        if(draw_btn && this.profile_data == null) {
-            load_icon = $(this.get_spinner()).addClass('google_loading')
-            signin_btn = tthis.get_JQ_button().css('display','none')
-            $('body').append(signin_btn)
-            $('body').append(load_icon)
-            setTimeout(function(){
-                if(signin_btn != null) {
-                    load_icon.remove()
-                    signin_btn.css('display','block')
-                }
-            },2000)
-        }
 
-        return new Promise((ok)=>{
-            let int = setInterval(function() {
-                if(tthis.profile_data == null)
-                    return
-                if(draw_btn && signin_btn != null) {
-                    load_icon.remove()
+        if(draw_btn) {
+            let tthis = this
+            return new Promise(ok=>{
+                let signin_btn = this.get_JQ_button(async function() {
                     signin_btn.remove()
-                    load_icon = null
-                    signin_btn = null
-                    $('body').append(tthis.get_user_button(tthis.profile_data))
-                }
-                clearInterval(int)
-                ok(tthis.profile_data)
+                    let profile_data = await tthis.get_profile_data(draw_btn)
+                    ok(profile_data)
+                })
+                $('body').append(signin_btn)
             })
-        })*/
+        }
     }
 
     get_spinner() {
-        return '<div class="mdl-spinner mdl-js-spinner is-active is-upgraded" data-upgraded=",MaterialSpinner"><div class="mdl-spinner__layer mdl-spinner__layer-1"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-2"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-3"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-4"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div></div>'
+        return '<div class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active is-upgraded" data-upgraded=",MaterialSpinner"><div class="mdl-spinner__layer mdl-spinner__layer-1"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-2"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-3"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div><div class="mdl-spinner__layer mdl-spinner__layer-4"><div class="mdl-spinner__circle-clipper mdl-spinner__left"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__gap-patch"><div class="mdl-spinner__circle"></div></div><div class="mdl-spinner__circle-clipper mdl-spinner__right"><div class="mdl-spinner__circle"></div></div></div></div>'
+    }
+
+    get_button() {
+        return '<div id="g-signin2" class="g-signin2"><div style="height:50px;width:240px;" class="abcRioButton abcRioButtonLightBlue"><div class="abcRioButtonContentWrapper"><div class="abcRioButtonIcon" style="padding:15px"><div style="width:18px;height:18px;" class="abcRioButtonSvgImageWithFallback abcRioButtonIconImage abcRioButtonIconImage18"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" viewBox="0 0 48 48" class="abcRioButtonSvg"><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></g></svg></div></div><span style="font-size:16px;line-height:48px;" class="abcRioButtonContents"><span id="not_signed_in1hva6t2cu25h">Connexion</span><span id="connected1hva6t2cu25h" style="display:none">Signed in</span></span></div></div></div>'
     }
 
 }
